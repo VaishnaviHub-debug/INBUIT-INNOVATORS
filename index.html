@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FarmCare</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Poppins',sans-serif}
+body{background:#f0f4f1;color:#1b3d2f;scroll-behavior:smooth}
+
+header{background:white;padding:18px 50px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1000;box-shadow:0 2px 12px rgba(0,0,0,0.07)}
+.logo{display:flex;align-items:center;font-size:20px;font-weight:700;color:#1b3d2f}
+.logo svg{width:36px;margin-right:8px}
+nav{display:flex;align-items:center}
+nav a{margin-left:25px;text-decoration:none;color:#1b3d2f;font-weight:600;position:relative;font-size:14px}
+nav a::after{content:'';position:absolute;bottom:-5px;left:0;width:0%;height:2px;background:#2e7d32;transition:0.3s}
+nav a:hover::after{width:100%}
+.lang-dropdown{position:relative;margin-left:25px}
+.lang-dropdown button{background:none;border:none;font-weight:600;cursor:pointer;color:#1b3d2f;font-size:14px}
+.lang-menu{display:none;position:absolute;top:32px;right:0;background:white;box-shadow:0 5px 20px rgba(0,0,0,0.12);border-radius:10px;overflow:hidden;min-width:130px;z-index:999}
+.lang-menu div{padding:10px 18px;cursor:pointer;font-size:13px}
+.lang-menu div:hover{background:#2e7d32;color:white}
+
+.hero{height:90vh;background:url('https://images.unsplash.com/photo-1501004318641-b39e6451bec6') center/cover;display:flex;align-items:center;justify-content:center;text-align:center;color:white;position:relative}
+.hero::before{content:'';position:absolute;width:100%;height:100%;background:rgba(0,0,0,0.52)}
+.hero-content{position:relative;z-index:2;animation:fadeUp 1s ease}
+.hero-content h1{font-size:64px;font-weight:700;margin-bottom:20px;line-height:1.2}
+.hero-content p{font-size:20px;margin-bottom:20px;opacity:.9}
+.btn{margin-top:25px;padding:14px 36px;background:#2e7d32;color:white;border-radius:30px;text-decoration:none;display:inline-block;font-weight:600;transition:.2s}
+.btn:hover{background:#1b5e20;transform:translateY(-2px)}
+
+section{padding:80px 40px}
+.section-title{text-align:center;margin-bottom:60px}
+.section-title h2{font-size:32px;font-weight:700}
+
+.features-container{max-width:600px;margin:auto;position:relative}
+.features-container::before{content:'';position:absolute;left:25px;top:0;width:3px;height:100%;background:#2e7d32}
+.feature-row{display:flex;align-items:flex-start;margin-bottom:40px;opacity:0;transform:translateY(40px);transition:0.6s ease}
+.icon{width:50px;height:50px;border-radius:50%;background:#2e7d32;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;margin-right:20px;flex-shrink:0}
+.show{opacity:1;transform:translateY(0)}
+
+.upload-section{background:url('https://images.unsplash.com/photo-1464226184884-fa280b87c399') center/cover;padding:100px 20px;position:relative}
+.upload-section::before{content:'';position:absolute;width:100%;height:100%;background:rgba(0,0,0,0.6);top:0}
+.upload-box{position:relative;z-index:2;backdrop-filter:blur(12px);background:rgba(255,255,255,0.12);padding:36px;border-radius:18px;text-align:center;color:white;max-width:440px;margin:auto;border:1px solid rgba(255,255,255,0.2)}
+.upload-box h3{font-size:22px;font-weight:700;margin-bottom:8px}
+.upload-actions{display:flex;justify-content:center;align-items:center;gap:15px;margin-top:18px}
+.upload-btn{padding:13px 28px;background:#2e7d32;border-radius:10px;cursor:pointer;color:white;display:inline-block;font-weight:600;transition:.2s;border:none;font-size:14px}
+.upload-btn:hover{background:#1b5e20}
+input[type=file]{display:none}
+#result{margin-top:18px;font-size:15px;min-height:24px}
+
+/* RESULT BANNER */
+.result-banner{display:none;margin:24px 40px 0;padding:18px 26px;border-radius:16px;font-size:15px;font-weight:600;align-items:center;gap:14px;box-shadow:0 4px 16px rgba(0,0,0,0.09)}
+.result-banner.show{display:flex}
+.result-banner.red-banner{background:#fff3f3;border:1.5px solid #e53935;color:#c62828}
+.result-banner.orange-banner{background:#fff8f0;border:1.5px solid #fb8c00;color:#e65100}
+.result-banner.green-banner{background:#f1fff2;border:1.5px solid #43a047;color:#1b5e20}
+.banner-icon{font-size:26px;flex-shrink:0}
+
+/* DASHBOARD */
+#dashboard{background:#f0f4f1;padding:60px 40px 80px}
+.dashboard-grid{display:grid;grid-template-columns:1fr;gap:24px;max-width:1280px;margin:0 auto}
+
+/* TOP ROW: pie chart + latest scan side by side */
+.top-row{display:grid;grid-template-columns:320px 1fr;gap:24px}
+
+/* PIE CHART CARD */
+.chart-card{background:white;border-radius:20px;padding:28px 22px 24px;box-shadow:0 4px 20px rgba(0,0,0,0.06);display:flex;flex-direction:column;gap:22px;align-self:start}
+.chart-card-title{font-size:15px;font-weight:700;color:#1b3d2f;text-align:center}
+
+.chart-wrap{position:relative;width:200px;height:200px;margin:0 auto}
+.chart-center-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;line-height:1.1}
+.chart-center-label .pct{font-size:30px;font-weight:700;color:#1b3d2f}
+.chart-center-label .lbl{font-size:11px;color:#6b8c76;font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-top:3px}
+
+.stat-pills{display:flex;flex-direction:column;gap:10px}
+.stat-pill{display:flex;align-items:center;justify-content:space-between;background:#f8faf8;border-radius:12px;padding:11px 14px;border-left:4px solid #ccc;transition:.3s}
+.stat-pill.green{border-left-color:#43a047}
+.stat-pill.orange{border-left-color:#fb8c00}
+.stat-pill.red{border-left-color:#e53935}
+.stat-pill .pill-left{display:flex;flex-direction:column;gap:2px}
+.stat-pill .pill-label{font-size:13px;font-weight:600;color:#222}
+.stat-pill .pill-pct{font-size:11px;color:#999}
+.stat-pill .pill-val{font-size:20px;font-weight:700;color:#1b3d2f}
+
+/* LATEST SCAN CARD */
+.scan-card{background:white;border-radius:20px;padding:22px;box-shadow:0 4px 20px rgba(0,0,0,0.06);display:flex;flex-direction:column;gap:16px}
+.scan-card-title{font-size:15px;font-weight:700;color:#1b3d2f;border-bottom:1px solid #f0f0f0;padding-bottom:12px}
+.scan-content{display:flex;gap:18px;align-items:flex-start;flex:1}
+.scan-img-wrap{width:140px;height:140px;border-radius:14px;overflow:hidden;border:2px dashed #d0e0d4;background:#f8faf8;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative}
+.scan-img-wrap img{width:100%;height:100%;object-fit:cover;border-radius:12px}
+.scan-img-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#a0bcab;text-align:center;padding:10px}
+.scan-img-placeholder span{font-size:30px}
+.scan-img-placeholder p{font-size:11px;font-weight:500;line-height:1.3}
+.scan-details{flex:1;display:flex;flex-direction:column;gap:10px}
+.scan-detail-row{display:flex;flex-direction:column;gap:2px}
+.scan-detail-label{font-size:10px;font-weight:600;color:#6b8c76;text-transform:uppercase;letter-spacing:.5px}
+.scan-detail-val{font-size:13px;font-weight:600;color:#1b3d2f}
+.scan-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.scan-badge.healthy{background:#e8f5e9;color:#2e7d32}
+.scan-badge.at-risk{background:#fff3e0;color:#e65100}
+.scan-badge.diseased{background:#ffebee;color:#c62828}
+.scan-confidence{margin-top:auto}
+.confidence-bar-wrap{background:#f0f0f0;border-radius:10px;height:6px;overflow:hidden;margin-top:4px}
+.confidence-bar{height:100%;border-radius:10px;transition:width 0.8s ease;background:#2e7d32}
+.scan-timestamp{font-size:11px;color:#aaa;margin-top:4px}
+.scan-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:8px;padding:20px;text-align:center;color:#a0bcab}
+.scan-empty-state span{font-size:38px}
+.scan-empty-state p{font-size:13px;font-weight:500}
+
+/* MAP CARD */
+.map-card{background:white;border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.06);display:flex;flex-direction:column}
+.map-top{padding:16px 22px 12px;border-bottom:1px solid #f0f0f0}
+.map-top-row{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.map-title-text{font-size:15px;font-weight:700;color:#1b3d2f}
+.map-subtitle{font-size:12px;color:#6b8c76;margin-top:3px}
+.map-legend{display:flex;gap:14px;font-size:12px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:5px;font-weight:600}
+.legend-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+
+/* MAP PLACEHOLDER & ACTIVE */
+.map-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;gap:18px;padding:40px;background:#f8faf8}
+.map-placeholder-icon{font-size:52px;opacity:.5}
+.map-placeholder h4{font-size:15px;font-weight:700;color:#1b3d2f;text-align:center}
+.map-placeholder p{font-size:12px;color:#6b8c76;text-align:center;max-width:280px;line-height:1.6}
+.use-location-btn{display:flex;align-items:center;gap:8px;padding:13px 26px;background:#2e7d32;color:white;border:none;border-radius:30px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;font-family:'Poppins',sans-serif;box-shadow:0 4px 14px rgba(46,125,50,0.35)}
+.use-location-btn:hover{background:#1b5e20;transform:translateY(-2px);box-shadow:0 6px 18px rgba(46,125,50,0.4)}
+.use-location-btn svg{width:18px;height:18px;fill:white;flex-shrink:0}
+.map-or{font-size:12px;color:#aaa;font-weight:500}
+
+#disease-map{flex:1;min-height:430px;width:100%;display:none}
+.location-bar{display:flex;align-items:center;gap:8px;padding:10px 22px;background:#f8faf8;font-size:12px;color:#555;border-top:1px solid #eee;flex-wrap:wrap}
+.location-bar strong{color:#2e7d32}
+
+footer{background:#1b3d2f;color:white;text-align:center;padding:24px;font-size:14px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,0.35);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;display:inline-block;margin-right:7px;vertical-align:middle}
+
+@media(max-width:960px){
+  .top-row{grid-template-columns:1fr}
+  .hero-content h1{font-size:38px}
+  header{padding:14px 18px}
+  nav a{margin-left:10px;font-size:13px}
+  section{padding:60px 20px}
+  .result-banner{margin:16px 20px 0}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 64 64" fill="#2e7d32"><path d="M32 2C20 2 12 12 12 24c0 10 6 18 16 20v8h8v-8c10-2 16-10 16-20C52 12 44 2 32 2z"/></svg>
+    FarmCare
+  </div>
+  <nav>
+    <a href="#" data-i18n="nav_home">Home</a>
+    <a href="#features" data-i18n="nav_features">Features</a>
+    <a href="#dashboard" data-i18n="nav_dashboard">Dashboard</a>
+    <a href="#upload" data-i18n="nav_analyze">Analyze</a>
+    <div class="lang-dropdown">
+      <button onclick="toggleLang()" id="langBtn">English ▼</button>
+      <div id="langMenu" class="lang-menu">
+        <div onclick="setLanguage('en')">🇬🇧 English</div>
+        <div onclick="setLanguage('hi')">🇮🇳 हिन्दी</div>
+        <div onclick="setLanguage('te')">🇮🇳 తెలుగు</div>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-content">
+    <h1 data-i18n="hero_title">AI Powered Smart Farming</h1>
+    <p data-i18n="hero_desc">Detect diseases early and protect your crops efficiently.</p>
+    <a href="#upload" class="btn" data-i18n="hero_btn">Start Analysis</a>
+  </div>
+</section>
+
+<section id="features">
+  <div class="section-title"><h2 data-i18n="features_heading">Core Features</h2></div>
+  <div class="features-container">
+    <div class="feature-row">
+      <div class="icon">📸</div>
+      <div><h3 data-i18n="feat1_title">AI Image Detection</h3><p data-i18n="feat1_desc">Instantly detect crop diseases using smart vision.</p></div>
+    </div>
+    <div class="feature-row">
+      <div class="icon">🗺️</div>
+      <div><h3 data-i18n="feat2_title">Geo Risk Mapping</h3><p data-i18n="feat2_desc">Track nearby farm risks and disease spread patterns.</p></div>
+    </div>
+    <div class="feature-row">
+      <div class="icon">🔔</div>
+      <div><h3 data-i18n="feat3_title">Smart Alerts</h3><p data-i18n="feat3_desc">Receive early warnings before damage increases.</p></div>
+    </div>
+    <div class="feature-row">
+      <div class="icon">📊</div>
+      <div><h3 data-i18n="feat4_title">Insights & Reports</h3><p data-i18n="feat4_desc">Make better farming decisions using data.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="upload-section" id="upload">
+  <div class="upload-box">
+    <h3 data-i18n="upload_heading">Analyze Your Crop</h3>
+    <p data-i18n="upload_subtext" style="font-size:13px;opacity:.85;margin-top:6px">Upload a crop leaf photo for instant AI diagnosis.</p>
+    <div class="upload-actions">
+      <label class="upload-btn">
+        <span data-i18n="upload_btn">Upload Image</span>
+        <input type="file" id="imageInput" accept="image/*">
+      </label>
+    </div>
+    <p id="result" data-i18n="upload_prompt">Upload to start analysis</p>
+  </div>
+</section>
+
+<!-- RESULT BANNER -->
+<div class="result-banner" id="resultBanner">
+  <span class="banner-icon" id="bannerIcon">⚠️</span>
+  <div>
+    <div id="bannerTitle" style="font-size:16px;font-weight:700"></div>
+    <div id="bannerSub" style="font-size:13px;font-weight:400;margin-top:3px;opacity:.85"></div>
+  </div>
+</div>
+
+<section id="dashboard">
+  <div class="section-title"><h2 data-i18n="dashboard_heading">Farm Dashboard</h2></div>
+
+  <div class="dashboard-grid">
+
+    <!-- TOP ROW: Pie Chart + Latest Scan -->
+    <div class="top-row">
+
+      <!-- PIE CHART + STATS -->
+      <div class="chart-card">
+        <div class="chart-card-title" data-i18n="chart_title">Crop Health Overview</div>
+
+        <div class="chart-wrap">
+          <canvas id="chart"></canvas>
+          <div class="chart-center-label">
+            <div class="pct" id="chartCenterPct">50%</div>
+            <div class="lbl" id="chartCenterLbl">Healthy</div>
+          </div>
+        </div>
+
+        <div class="stat-pills">
+          <div class="stat-pill green">
+            <div class="pill-left">
+              <div class="pill-label">🌿 <span data-i18n="chart_healthy">Healthy</span></div>
+              <div class="pill-pct" id="pctGreen">50% of scanned area</div>
+            </div>
+            <div class="pill-val" id="valGreen">50%</div>
+          </div>
+          <div class="stat-pill orange">
+            <div class="pill-left">
+              <div class="pill-label">⚠️ <span data-i18n="chart_risk">At Risk</span></div>
+              <div class="pill-pct" id="pctOrange">30% of scanned area</div>
+            </div>
+            <div class="pill-val" id="valOrange">30%</div>
+          </div>
+          <div class="stat-pill red">
+            <div class="pill-left">
+              <div class="pill-label">🔴 <span data-i18n="chart_diseased">Diseased</span></div>
+              <div class="pill-pct" id="pctRed">20% of scanned area</div>
+            </div>
+            <div class="pill-val" id="valRed">20%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LATEST SCAN CARD -->
+      <div class="scan-card">
+        <div class="scan-card-title">🔍 Latest Scan</div>
+
+        <!-- Empty state (shown before first upload) -->
+        <div id="scanEmptyState" class="scan-empty-state">
+          <span>📷</span>
+          <p>No photo uploaded yet.<br>Upload a crop image to see your scan results here.</p>
+        </div>
+
+        <!-- Scan result (shown after upload) -->
+        <div id="scanResult" class="scan-content" style="display:none">
+          <div class="scan-img-wrap" id="scanImgWrap">
+            <img id="scanImg" src="" alt="Scanned crop"/>
+          </div>
+          <div class="scan-details">
+            <div class="scan-detail-row">
+              <span class="scan-detail-label">Status</span>
+              <span id="scanBadge" class="scan-badge healthy">✅ Healthy</span>
+            </div>
+            <div class="scan-detail-row">
+              <span class="scan-detail-label">Detected Disease</span>
+              <span class="scan-detail-val" id="scanDisease">—</span>
+            </div>
+            <div class="scan-detail-row">
+              <span class="scan-detail-label">Confidence</span>
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <span class="scan-detail-val" id="scanConfidenceTxt">—</span>
+                </div>
+                <div class="confidence-bar-wrap">
+                  <div class="confidence-bar" id="scanConfidenceBar" style="width:0%"></div>
+                </div>
+              </div>
+            </div>
+            <div class="scan-detail-row">
+              <span class="scan-detail-label">Crop Area at Risk</span>
+              <span class="scan-detail-val" id="scanAreaRisk">—</span>
+            </div>
+            <div class="scan-timestamp" id="scanTimestamp">—</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- MAP CARD -->
+    <div class="map-card">
+      <div class="map-top">
+        <div class="map-top-row">
+          <div>
+            <div class="map-title-text" data-i18n="map_title">Disease Risk Map — Your Field</div>
+            <div class="map-subtitle" id="mapSubtitle" data-i18n="map_subtitle">Local view (~1.5 km). Markers show your field and immediate neighbors.</div>
+          </div>
+          <div class="map-legend" id="mapLegend" style="display:none">
+            <span class="legend-item"><span class="legend-dot" style="background:#e53935"></span><span data-i18n="legend_red">High Risk</span></span>
+            <span class="legend-item"><span class="legend-dot" style="background:#fb8c00"></span><span data-i18n="legend_orange">Moderate</span></span>
+            <span class="legend-item"><span class="legend-dot" style="background:#43a047"></span><span data-i18n="legend_green">Healthy</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Placeholder with Use My Location button -->
+      <div class="map-placeholder" id="mapPlaceholder">
+        <div class="map-placeholder-icon">🗺️</div>
+        <h4>See Your Farm's Disease Risk Zone</h4>
+        <p>Allow location access to view your field and nearby risk zones on the map.</p>
+        <button class="use-location-btn" onclick="activateMap()">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          Use my location
+        </button>
+        <span class="map-or">or upload a crop photo above to auto-detect</span>
+      </div>
+
+      <div id="disease-map"></div>
+      <div class="location-bar" id="locationBar" style="display:none">
+        📍 <span id="loc-status" data-i18n="loc_waiting">Waiting for upload to detect your location…</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer>
+  <p data-i18n="footer_text">© 2026 FarmCare | Smart Farming</p>
+</footer>
+
+<script>
+/* ── TRANSLATIONS ── */
+const TRANSLATIONS = {
+  en:{
+    lang_label:"English ▼",nav_home:"Home",nav_features:"Features",nav_dashboard:"Dashboard",nav_analyze:"Analyze",
+    hero_title:"AI Powered Smart Farming",hero_desc:"Detect diseases early and protect your crops efficiently.",hero_btn:"Start Analysis",
+    features_heading:"Core Features",
+    feat1_title:"AI Image Detection",feat1_desc:"Instantly detect crop diseases using smart vision.",
+    feat2_title:"Geo Risk Mapping",feat2_desc:"Track nearby farm risks and disease spread patterns.",
+    feat3_title:"Smart Alerts",feat3_desc:"Receive early warnings before damage increases.",
+    feat4_title:"Insights & Reports",feat4_desc:"Make better farming decisions using data.",
+    upload_heading:"Analyze Your Crop",upload_subtext:"Upload a crop leaf photo for instant AI diagnosis.",
+    upload_btn:"Upload Image",upload_prompt:"Upload to start analysis",upload_analyzing:"Analyzing your crop…",
+    dashboard_heading:"Farm Dashboard",
+    chart_title:"Crop Health Overview",chart_healthy:"Healthy",chart_risk:"At Risk",chart_diseased:"Diseased",
+    map_title:"Disease Risk Map — Your Field",map_subtitle:"Local view (~1.5 km). Markers show your field and immediate neighbors.",
+    legend_red:"High Risk",legend_orange:"Moderate",legend_green:"Healthy",
+    loc_waiting:"Waiting for upload to detect your location…",
+    loc_detecting:"Detecting your location…",
+    loc_found:"Your field located. Showing nearby risk zones.",
+    loc_denied:"Location denied. Showing demo location (Hyderabad).",
+    of_area:"% of scanned area",
+    footer_text:"© 2026 FarmCare | Smart Farming"
+  },
+  hi:{
+    lang_label:"हिन्दी ▼",nav_home:"होम",nav_features:"विशेषताएं",nav_dashboard:"डैशबोर्ड",nav_analyze:"विश्लेषण",
+    hero_title:"एआई आधारित स्मार्ट खेती",hero_desc:"बीमारियों का जल्दी पता लगाएं और फसल बचाएं।",hero_btn:"विश्लेषण शुरू करें",
+    features_heading:"मुख्य विशेषताएं",
+    feat1_title:"एआई छवि पहचान",feat1_desc:"स्मार्ट विज़न से फसल की बीमारियाँ तुरंत पहचानें।",
+    feat2_title:"भौगोलिक जोखिम मानचित्र",feat2_desc:"पास के खेतों के जोखिम ट्रैक करें।",
+    feat3_title:"स्मार्ट अलर्ट",feat3_desc:"नुकसान बढ़ने से पहले चेतावनी पाएं।",
+    feat4_title:"जानकारी और रिपोर्ट",feat4_desc:"डेटा से बेहतर खेती के निर्णय लें।",
+    upload_heading:"अपनी फसल का विश्लेषण करें",upload_subtext:"तुरंत एआई निदान के लिए पत्ती की फोटो अपलोड करें।",
+    upload_btn:"छवि अपलोड करें",upload_prompt:"विश्लेषण के लिए अपलोड करें",upload_analyzing:"फसल का विश्लेषण हो रहा है…",
+    dashboard_heading:"खेत डैशबोर्ड",
+    chart_title:"फसल स्वास्थ्य अवलोकन",chart_healthy:"स्वस्थ",chart_risk:"जोखिम में",chart_diseased:"रोगग्रस्त",
+    map_title:"रोग जोखिम मानचित्र",map_subtitle:"अपने खेत के जोखिम क्षेत्र देखने के लिए फोटो अपलोड करें",
+    legend_red:"उच्च जोखिम",legend_orange:"मध्यम",legend_green:"स्वस्थ",
+    loc_waiting:"स्थान पता लगाने के लिए अपलोड करें…",loc_detecting:"आपका स्थान पता लगाया जा रहा है…",
+    loc_found:"आपका खेत मिल गया। पास के जोखिम क्षेत्र दिखाए जा रहे हैं।",
+    loc_denied:"स्थान अनुमति नहीं मिली। डेमो स्थान दिखाया जा रहा है।",
+    of_area:"% स्कैन किए क्षेत्र का",footer_text:"© 2026 FarmCare | स्मार्ट खेती"
+  },
+  te:{
+    lang_label:"తెలుగు ▼",nav_home:"హోమ్",nav_features:"లక్షణాలు",nav_dashboard:"డాష్‌బోర్డ్",nav_analyze:"విశ్లేషణ",
+    hero_title:"ఏఐ ఆధారిత స్మార్ట్ వ్యవసాయం",hero_desc:"రోగాలను ముందుగానే గుర్తించి పంటలను రక్షించండి.",hero_btn:"విశ్లేషణ ప్రారంభించండి",
+    features_heading:"ముఖ్య లక్షణాలు",
+    feat1_title:"ఏఐ చిత్ర గుర్తింపు",feat1_desc:"స్మార్ట్ విజన్ ద్వారా పంట వ్యాధులను వెంటనే గుర్తించండి.",
+    feat2_title:"జియో రిస్క్ మ్యాపింగ్",feat2_desc:"సమీప వ్యవసాయ నష్టాలు ట్రాక్ చేయండి.",
+    feat3_title:"స్మార్ట్ హెచ్చరికలు",feat3_desc:"నష్టం పెరగడానికి ముందే హెచ్చరికలు పొందండి.",
+    feat4_title:"అంతర్దృష్టులు & నివేదికలు",feat4_desc:"డేటా ఉపయోగించి మెరుగైన నిర్ణయాలు తీసుకోండి.",
+    upload_heading:"మీ పంటను విశ్లేషించండి",upload_subtext:"తక్షణ ఏఐ నిర్ధారణ కోసం ఆకు ఫోటో అప్‌లోడ్ చేయండి.",
+    upload_btn:"చిత్రాన్ని అప్‌లోడ్ చేయండి",upload_prompt:"విశ్లేషణకు అప్‌లోడ్ చేయండి",upload_analyzing:"పంటను విశ్లేషిస్తోంది…",
+    dashboard_heading:"వ్యవసాయ డాష్‌బోర్డ్",
+    chart_title:"పంట ఆరోగ్య అవలోకనం",chart_healthy:"ఆరోగ్యకరం",chart_risk:"ప్రమాదంలో",chart_diseased:"రోగగ్రస్తం",
+    map_title:"వ్యాధి ప్రమాద మ్యాప్",map_subtitle:"మీ పంట ఫోటో అప్‌లోడ్ చేయండి",
+    legend_red:"అధిక ప్రమాదం",legend_orange:"మధ్యస్థం",legend_green:"ఆరోగ్యకరం",
+    loc_waiting:"స్థానం గుర్తించడానికి అప్‌లోడ్ చేయండి…",loc_detecting:"మీ స్థానం గుర్తిస్తోంది…",
+    loc_found:"మీ పొలం గుర్తించబడింది. సమీప ప్రమాద జోన్లు చూపిస్తోంది.",
+    loc_denied:"స్థాన అనుమతి నిరాకరించబడింది. డెమో స్థానం చూపిస్తోంది.",
+    of_area:"% స్కాన్ చేయబడిన ప్రాంతం",footer_text:"© 2026 FarmCare | స్మార్ట్ వ్యవసాయం"
+  }
+};
+
+/* ── LANGUAGE ── */
+let currentLang = localStorage.getItem("lang") || "en";
+let chartInstance = null;
+
+function applyTranslations(lang){
+  const t = TRANSLATIONS[lang]; if(!t) return;
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    const k=el.getAttribute("data-i18n");
+    if(t[k]!==undefined) el.textContent=t[k];
+  });
+  document.getElementById("langBtn").textContent=t.lang_label;
+  if(chartInstance){
+    chartInstance.data.labels=[t.chart_healthy,t.chart_risk,t.chart_diseased];
+    chartInstance.update();
+  }
+}
+function toggleLang(){
+  const m=document.getElementById("langMenu");
+  m.style.display=m.style.display==="block"?"none":"block";
+}
+function setLanguage(lang){
+  currentLang=lang; localStorage.setItem("lang",lang);
+  document.getElementById("langMenu").style.display="none";
+  applyTranslations(lang);
+}
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".lang-dropdown"))
+    document.getElementById("langMenu").style.display="none";
+});
+
+/* ── CHART ── */
+function initChart(){
+  const t=TRANSLATIONS[currentLang];
+  const ctx=document.getElementById("chart").getContext("2d");
+  chartInstance=new Chart(ctx,{
+    type:"doughnut",
+    data:{
+      labels:[t.chart_healthy,t.chart_risk,t.chart_diseased],
+      datasets:[{
+        data:[50,30,20],
+        backgroundColor:["#43a047","#fb8c00","#e53935"],
+        borderWidth:4,borderColor:"#ffffff",hoverOffset:10
+      }]
+    },
+    options:{
+      cutout:"70%",
+      animation:{animateRotate:true,duration:900},
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>" "+c.label+": "+c.parsed+"%"}}}
+    }
+  });
+}
+
+function updateChart(green,orange,red){
+  chartInstance.data.datasets[0].data=[green,orange,red];
+  chartInstance.update();
+  const t=TRANSLATIONS[currentLang];
+  let dom,domPct,domColor;
+  if(green>=orange&&green>=red){dom=t.chart_healthy;domPct=green;domColor="#43a047";}
+  else if(orange>=red){dom=t.chart_risk;domPct=orange;domColor="#fb8c00";}
+  else{dom=t.chart_diseased;domPct=red;domColor="#e53935";}
+  const pctEl=document.getElementById("chartCenterPct");
+  pctEl.textContent=domPct+"%"; pctEl.style.color=domColor;
+  document.getElementById("chartCenterLbl").textContent=dom;
+  const suf=t.of_area||"% of scanned area";
+  document.getElementById("valGreen").textContent=green+"%";
+  document.getElementById("valOrange").textContent=orange+"%";
+  document.getElementById("valRed").textContent=red+"%";
+  document.getElementById("pctGreen").textContent=green+suf;
+  document.getElementById("pctOrange").textContent=orange+suf;
+  document.getElementById("pctRed").textContent=red+suf;
+}
+
+/* ── LATEST SCAN CARD ── */
+function updateScanCard(imageDataUrl, scenario, confidence){
+  document.getElementById("scanEmptyState").style.display="none";
+  document.getElementById("scanResult").style.display="flex";
+
+  document.getElementById("scanImg").src=imageDataUrl;
+
+  // Badge
+  const badge=document.getElementById("scanBadge");
+  if(scenario.risk==="green"){
+    badge.className="scan-badge healthy";
+    badge.textContent="✅ Healthy";
+  } else if(scenario.risk==="orange"){
+    badge.className="scan-badge at-risk";
+    badge.textContent="⚠️ At Risk";
+  } else {
+    badge.className="scan-badge diseased";
+    badge.textContent="🔴 Diseased";
+  }
+
+  // Confidence bar color
+  const bar=document.getElementById("scanConfidenceBar");
+  bar.style.background=scenario.risk==="green"?"#43a047":scenario.risk==="orange"?"#fb8c00":"#e53935";
+
+  document.getElementById("scanDisease").textContent=scenario.disease;
+  document.getElementById("scanConfidenceTxt").textContent=confidence+"%";
+  bar.style.width=confidence+"%";
+  document.getElementById("scanAreaRisk").textContent=scenario.red+"% diseased, "+scenario.orange+"% at risk";
+
+  const now=new Date();
+  document.getElementById("scanTimestamp").textContent="Scanned at "+now.toLocaleTimeString()+", "+now.toLocaleDateString();
+}
+
+/* ── MAP ── */
+let diseaseMap=null, mapLayers=[], farmerMarker=null, mapInitialized=false;
+
+const RISK_CFG={
+  red:   {color:"#e53935",fill:0.35,radius:600, glow:1100},
+  orange:{color:"#fb8c00",fill:0.28,radius:500, glow:900},
+  green: {color:"#43a047",fill:0.22,radius:450, glow:800}
+};
+
+const NEIGHBOR_OFFSETS=[
+  {dlat:0.012,dlng:0.008, risk:"green",  disease:"No detection",      cases:0},
+  {dlat:-0.009,dlng:0.015,risk:"orange", disease:"Leaf Blight",        cases:8},
+  {dlat:0.018,dlng:-0.012,risk:"red",    disease:"Rice Blast",         cases:19},
+  {dlat:-0.015,dlng:-0.010,risk:"orange",disease:"Powdery Mildew",     cases:5},
+  {dlat:0.025,dlng:0.020, risk:"green",  disease:"No detection",       cases:0},
+  {dlat:-0.022,dlng:0.018,risk:"red",    disease:"Bacterial Blight",   cases:14},
+  {dlat:0.030,dlng:-0.025,risk:"green",  disease:"No detection",       cases:0},
+  {dlat:-0.028,dlng:-0.020,risk:"orange",disease:"Downy Mildew",       cases:6},
+  {dlat:0.005,dlng:0.030, risk:"red",    disease:"Fusarium Wilt",      cases:22},
+  {dlat:-0.035,dlng:0.005,risk:"green",  disease:"No detection",       cases:0},
+  {dlat:0.040,dlng:0.010, risk:"orange", disease:"Leaf Rust",          cases:9},
+  {dlat:-0.008,dlng:-0.035,risk:"green", disease:"No detection",       cases:0}
+];
+
+function clearMapLayers(){
+  mapLayers.forEach(l=>diseaseMap.removeLayer(l)); mapLayers=[];
+  if(farmerMarker){diseaseMap.removeLayer(farmerMarker);farmerMarker=null;}
+}
+
+function addZoneCircles(lat,lng,risk,popupHtml){
+  const c=RISK_CFG[risk];
+  const glow=L.circle([lat,lng],{radius:c.glow,color:c.color,fillColor:c.color,fillOpacity:0.1,weight:0,interactive:false}).addTo(diseaseMap);
+  const ring=L.circle([lat,lng],{radius:c.radius,color:c.color,fillColor:c.color,fillOpacity:c.fill,weight:2}).addTo(diseaseMap);
+  ring.bindPopup(popupHtml,{maxWidth:250});
+  mapLayers.push(glow,ring);
+}
+
+function showMap(){
+  document.getElementById("mapPlaceholder").style.display="none";
+  document.getElementById("disease-map").style.display="block";
+  document.getElementById("locationBar").style.display="flex";
+  document.getElementById("mapLegend").style.display="flex";
+  if(!mapInitialized){
+    diseaseMap=L.map("disease-map",{center:[17.3850,78.4867],zoom:13,zoomControl:true,scrollWheelZoom:false});
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{attribution:"© OpenStreetMap contributors",maxZoom:19}).addTo(diseaseMap);
+    mapInitialized=true;
+  } else {
+    setTimeout(()=>diseaseMap.invalidateSize(),100);
+  }
+}
+
+/* "Use my location" button handler */
+function activateMap(){
+  showMap();
+  const t=TRANSLATIONS[currentLang];
+  document.getElementById("loc-status").textContent=t.loc_detecting;
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos=>plotFarmerLocation(pos.coords.latitude,pos.coords.longitude,true,"No Disease Found","green"),
+      ()=>plotFarmerLocation(17.3850,78.4867,false,"No Disease Found","green"),
+      {timeout:6000,enableHighAccuracy:true}
+    );
+  } else {
+    plotFarmerLocation(17.3850,78.4867,false,"No Disease Found","green");
+  }
+}
+
+function plotFarmerLocation(lat,lng,real,diseaseName,farmerRisk){
+  clearMapLayers();
+  const t=TRANSLATIONS[currentLang];
+  const riskBadge=r=>r==="red"?"🔴 High Risk":r==="orange"?"🟠 Moderate":"🟢 Healthy";
+
+  /* farmer's own field */
+  const col=RISK_CFG[farmerRisk].color;
+  const icon=L.divIcon({
+    html:`<div style="width:24px;height:24px;border-radius:50%;background:${col};border:3px solid white;box-shadow:0 0 0 4px ${col}55;"></div>`,
+    className:"",iconSize:[24,24],iconAnchor:[12,12]
+  });
+  farmerMarker=L.marker([lat,lng],{icon,zIndexOffset:1000})
+    .addTo(diseaseMap)
+    .bindPopup(`<div style="font-family:'Poppins',sans-serif;min-width:190px">
+      <strong style="color:#1b3d2f;font-size:14px">📍 Your Field</strong><br/>
+      <span style="font-size:12px;color:#555">${riskBadge(farmerRisk)}</span>
+      <hr style="margin:6px 0;border-color:#eee"/>
+      <b>Detected:</b> ${diseaseName}<br/>
+      <b>Confidence:</b> ${Math.floor(75+Math.random()*20)}%
+    </div>`,{maxWidth:240})
+    .openPopup();
+
+  addZoneCircles(lat,lng,farmerRisk,`<div style="font-family:'Poppins',sans-serif">
+    <strong style="color:#1b3d2f">📍 Your Field Zone</strong><br/>
+    <span style="font-size:12px">${riskBadge(farmerRisk)}</span><hr style="margin:6px 0;border-color:#eee"/>
+    <b>Disease:</b> ${diseaseName}
+  </div>`);
+
+  NEIGHBOR_OFFSETS.forEach((o,i)=>{
+    const nlat=lat+o.dlat, nlng=lng+o.dlng;
+    addZoneCircles(nlat,nlng,o.risk,`<div style="font-family:'Poppins',sans-serif;min-width:180px">
+      <strong style="color:#1b3d2f;font-size:13px">Neighbour Field #${i+1}</strong><br/>
+      <span style="font-size:12px;color:#555">${riskBadge(o.risk)}</span>
+      <hr style="margin:6px 0;border-color:#eee"/>
+      <b>Disease:</b> ${o.disease}<br/>
+      ${o.cases>0?`<b>Cases nearby:</b> ${o.cases}`:"<b>Status:</b> Clear"}
+    </div>`);
+  });
+
+  diseaseMap.flyTo([lat,lng],14,{duration:1.5});
+
+  document.getElementById("loc-status").innerHTML=real
+    ? `<strong>${t.loc_found}</strong> — ${lat.toFixed(4)}°N, ${lng.toFixed(4)}°E`
+    : `<strong>${t.loc_denied}</strong>`;
+
+  document.getElementById("mapSubtitle").textContent=
+    `${diseaseName} — ${real?"Your real field":"Demo: Hyderabad"} + 12 neighbouring fields`;
+}
+
+/* ── AI SCENARIOS ── */
+const SCENARIOS=[
+  {risk:"red",   disease:"Rice Blast",      green:15,orange:22,red:63,
+   cls:"red-banner",   icon:"🔴",title:"High Risk — Disease Detected",
+   sub:"Rice Blast detected at 89% confidence. Immediate treatment required.",confidence:89},
+  {risk:"orange",disease:"Leaf Blight",     green:38,orange:45,red:17,
+   cls:"orange-banner",icon:"🟠",title:"Moderate Risk — Disease Detected",
+   sub:"Leaf Blight at 76% confidence. Monitor and treat within 48 hours.",confidence:76},
+  {risk:"green", disease:"No Disease Found",green:78,orange:15,red:7,
+   cls:"green-banner", icon:"✅",title:"Crop is Healthy",
+   sub:"No disease detected. Your crop looks great! Some risk detected in nearby fields.",confidence:94},
+  {risk:"red",   disease:"Fusarium Wilt",   green:10,orange:18,red:72,
+   cls:"red-banner",   icon:"🔴",title:"High Risk — Disease Detected",
+   sub:"Fusarium Wilt at 93% confidence. Treat immediately to prevent spread.",confidence:93},
+  {risk:"orange",disease:"Powdery Mildew",  green:52,orange:36,red:12,
+   cls:"orange-banner",icon:"🟠",title:"Moderate Risk Detected",
+   sub:"Powdery Mildew at 81% confidence. Apply fungicide soon.",confidence:81},
+];
+let scenarioIdx=0;
+
+/* ── UPLOAD HANDLER ── */
+document.getElementById("imageInput").addEventListener("change",function(){
+  const file=this.files[0]; if(!file) return;
+  const t=TRANSLATIONS[currentLang];
+  document.getElementById("result").innerHTML=`<span class="spinner"></span>${t.upload_analyzing}`;
+  document.getElementById("resultBanner").classList.remove("show");
+
+  // Read image for scan card preview
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const imageDataUrl=e.target.result;
+
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(
+        pos=>processUpload(pos.coords.latitude,pos.coords.longitude,true,imageDataUrl),
+        ()=>processUpload(17.3850,78.4867,false,imageDataUrl),
+        {timeout:6000,enableHighAccuracy:true}
+      );
+    } else {
+      processUpload(17.3850,78.4867,false,imageDataUrl);
+    }
+  };
+  reader.readAsDataURL(file);
+});
+
+function processUpload(lat,lng,real,imageDataUrl){
+  const t=TRANSLATIONS[currentLang];
+  setTimeout(()=>{
+    const s=SCENARIOS[scenarioIdx%SCENARIOS.length]; scenarioIdx++;
+
+    document.getElementById("result").textContent=s.title;
+
+    const banner=document.getElementById("resultBanner");
+    banner.className="result-banner show "+s.cls;
+    document.getElementById("bannerIcon").textContent=s.icon;
+    document.getElementById("bannerTitle").textContent=s.title;
+    document.getElementById("bannerSub").textContent=s.sub;
+
+    updateChart(s.green,s.orange,s.red);
+    updateScanCard(imageDataUrl,s,s.confidence);
+
+    // Show map and plot
+    showMap();
+    plotFarmerLocation(lat,lng,real,s.disease,s.risk);
+
+    document.getElementById("dashboard").scrollIntoView({behavior:"smooth"});
+  },2000);
+}
+
+/* ── SCROLL ANIMATION ── */
+const rows=document.querySelectorAll(".feature-row");
+window.addEventListener("scroll",()=>{
+  rows.forEach(el=>{if(el.getBoundingClientRect().top<window.innerHeight-100)el.classList.add("show");});
+});
+
+/* ── INIT ── */
+window.addEventListener("DOMContentLoaded",()=>{
+  applyTranslations(currentLang);
+  initChart();
+});
+</script>
+</body>
+</html>
